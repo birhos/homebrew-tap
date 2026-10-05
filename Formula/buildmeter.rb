@@ -1,30 +1,51 @@
+# birhos/homebrew-tap içindeki Formula/buildmeter.rb için Go wrapper'ına geçiş sürümü.
+# url/sha256 satırlarını .github/workflows/homebrew.yml günceller.
+#
+# Eski formula `buildmeter-track` bash betiğini kuruyordu. Yeni formula aynı adı Go
+# binary'sine bağlar ve buildmeter.zsh'yi aynı yolda tutar; kullanıcının ~/.zshrc
+# satırı değişmeden çalışmaya devam eder.
 class Buildmeter < Formula
-  desc "Measure how long flutter run and flutter build take"
+  desc "Measure how long Flutter, .NET, React and Next.js builds take"
   homepage "https://github.com/birhos/BuildMeter"
-  url "https://github.com/birhos/BuildMeter/archive/refs/tags/v1.0.0.tar.gz"
-  sha256 "6879b486080ebace9fcb530f9de98291b2f4a01bc059cd69b0e9d9777f457943"
+  url "https://github.com/birhos/BuildMeter/archive/refs/tags/v1.1.0.tar.gz"
+  sha256 "6b08aeffe3352c2eb594456e30690a77ddbc2d51e7a612ba34e248d624653ba9"
   license "MIT"
   head "https://github.com/birhos/BuildMeter.git", branch: "main"
 
+  depends_on "go" => :build
+
   def install
-    bin.install "cli/buildmeter-track"
-    inreplace "cli/buildmeter.zsh", "$HOME/.buildmeter/bin/buildmeter-track", opt_bin/"buildmeter-track"
-    pkgshare.install "cli/buildmeter.zsh"
+    cd "wrapper" do
+      system "go", "build", *std_go_args(ldflags: "-s -w -X main.version=#{version}", output: bin/"buildmeter")
+    end
+    bin.install_symlink "buildmeter" => "buildmeter-track"
+    inreplace "cli/buildmeter.sh", "$HOME/.buildmeter/bin/buildmeter", opt_bin/"buildmeter"
+    pkgshare.install "cli/buildmeter.sh"
+    pkgshare.install_symlink "buildmeter.sh" => "buildmeter.zsh"
+    pkgshare.install "cli/msbuild/BuildMeter.targets"
   end
 
   def caveats
     <<~EOS
-      To track flutter run/build automatically, add this to your ~/.zshrc:
+      To track builds automatically, add this to your ~/.zshrc (or ~/.bashrc):
         source #{opt_pkgshare}/buildmeter.zsh
 
-      Records are written to ~/.buildmeter/events.jsonl.
+      For .NET builds (dotnet build, Rider), install the MSBuild hook
+      (.NET 8+ reads ~/Library/Application Support, .NET 7 and earlier ~/.local/share):
+        for d in ~/Library/Application\ Support ~/.local/share; do
+          mkdir -p "$d/Microsoft/MSBuild/Current/Microsoft.Common.targets/ImportAfter"
+          cp #{opt_pkgshare}/BuildMeter.targets "$d/Microsoft/MSBuild/Current/Microsoft.Common.targets/ImportAfter/"
+        done
+
+      Records are written to ~/.buildmeter/events.jsonl. Report: buildmeter report --range week
       The macOS app is available as a cask: brew install --cask birhos/tap/buildmeter
     EOS
   end
 
   test do
     ENV["BUILDMETER_DATA_DIR"] = testpath/".buildmeter"
+    assert_equal "hello", shell_output("#{bin}/buildmeter track echo hello").strip
     assert_equal "hello", shell_output("#{bin}/buildmeter-track echo hello").strip
-    assert_match "buildmeter-track", File.read(pkgshare/"buildmeter.zsh")
+    assert_match "Build Bekleme Raporu", shell_output("#{bin}/buildmeter report")
   end
 end

@@ -4,7 +4,7 @@ cask "buildmeter" do
 
   url "https://github.com/birhos/BuildMeter/releases/download/v#{version}/BuildMeter-#{version}.dmg"
   name "BuildMeter"
-  desc "Menu bar app and widget for Flutter build and run times"
+  desc "Menu bar app and widget for Flutter, .NET, React and Next.js build times"
   homepage "https://github.com/birhos/BuildMeter"
 
   depends_on macos: ">= :sonoma"
