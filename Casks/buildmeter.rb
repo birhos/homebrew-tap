@@ -1,6 +1,6 @@
 cask "buildmeter" do
-  version "1.0.0"
-  sha256 "300483571b85df7459a27df52347bcec96abb967514b1489ef9549ec556ae9f5"
+  version "1.1.0"
+  sha256 "577c253bc948d670830b2c848fba85eb4faf25827a3746e8cc1e9845cdef9284"
 
   url "https://github.com/birhos/BuildMeter/releases/download/v#{version}/BuildMeter-#{version}.dmg"
   name "BuildMeter"
